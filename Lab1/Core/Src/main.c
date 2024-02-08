@@ -68,16 +68,32 @@ int main(void) {
 		 the GPIOC peripheral. You’ll be redoing this code
 		 with hardware register access. */
 
-	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
-
+	//__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	
+	// Enable APB1ENR clock to enable GPIOC clock
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	
+	// Next we need to configure PC8 and PC9 the LED pins. First we start with MODER registers which
+	// need to be set to general purpose output.
+	GPIOC->MODER &= ~((1 << 19) | (1 << 17));
+	GPIOC->MODER |= ((1 << 18) | (1 << 16));
+	
+	// Next we will configure OTYPER registers to be in push-pull mode.
+	GPIOC->OTYPER &= ~((1 << 9) | (1 << 8));
+	
+	// Next we will configure the OSPEEDR registers to low speed mode
+	GPIOC->OSPEEDR &= ~((1 << 18) | (1 << 16));
+	
+	// Next we will configure the PUPDR registers to no pull up / down resistors
+	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16));
+	/*
 	// Set up a configuration struct to pass to the initialization function
-	/*GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
 															GPIO_MODE_OUTPUT_PP,
 															GPIO_SPEED_FREQ_LOW,
 															GPIO_NOPULL};
 
 	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC8 & PC9
-	*/
 	
 	// Set PC6 MODER register to general purpose output
 	GPIOC->MODER &= ~(1 << 13);
@@ -97,6 +113,10 @@ int main(void) {
 	GPIOA->OSPEEDR &= ~1;
 	GPIOA->PUPDR |= (1 << 1);
 	GPIOA->PUPDR &= ~1;
+	
+	*/
+	
+	
 	
 	
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Start PC8 high
