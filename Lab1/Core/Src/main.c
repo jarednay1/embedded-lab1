@@ -71,19 +71,41 @@ int main(void) {
 	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
 
 	// Set up a configuration struct to pass to the initialization function
-	GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
+	/*GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
 															GPIO_MODE_OUTPUT_PP,
 															GPIO_SPEED_FREQ_LOW,
 															GPIO_NOPULL};
 
 	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC8 & PC9
+	*/
+	
+	// Set PC6 MODER register to general purpose output
+	GPIOC->MODER &= ~(1 << 13);
+	GPIOC->MODER |= (1 << 12);
+	
+	// Set PC7 to push pull output using OTYPER register
+	GPIOC->OTYPER &= ~(1 << 7);
+	
+	// Set PC8 to low speed using OSPEEDR register
+	GPIOC->OSPEEDR &= ~(1 << 16);
+	
+	// Set PC9 to no pull up / pull down mode using PUPDR register
+	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18));
+	
+	// Set PA0 MODER OSPEEDR and PUPDR registers
+	GPIOA->MODER &= ~((1 << 1) | (1 << 0));
+	GPIOA->OSPEEDR &= ~1;
+	GPIOA->PUPDR |= (1 << 1);
+	GPIOA->PUPDR &= ~1;
+	
+	
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Start PC8 high
 	while (1) {
 		HAL_Delay(200); // Delay 200ms
 		// Toggle the output state of both PC8 and PC9
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
 	}
-}
+}	
 
 /**
   * @brief System Clock Configuration
