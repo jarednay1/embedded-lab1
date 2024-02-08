@@ -64,35 +64,47 @@ int main(void) {
 	HAL_Init(); // Reset of all peripherals, init the Flash and Systick
 	SystemClock_Config(); //Configure the system clock
 	
-	// Enable APB1ENR clock to enable GPIOC clock
-	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	// Enable APB1ENR clock to enable GPIOC and GPIOA 
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIOAEN;
 	
-	// Next we need to configure PC7 and PC6 the LED pins. First we start with MODER registers which
+	// Configure PC7 and PC6 the LED pins. First we start with MODER registers which
 	// need to be set to general purpose output.
 	GPIOC->MODER &= ~((1 << 15) | (1 << 13));
 	GPIOC->MODER |= ((1 << 14) | (1 << 12));
 	
-	// Next we will configure OTYPER registers to be in push-pull mode.
+	// Configure OTYPER registers to be in push-pull mode
 	GPIOC->OTYPER &= ~((1 << 7) | (1 << 6));
 	
-	// Next we will configure the OSPEEDR registers to low speed mode
+	// Configure the OSPEEDR registers to low speed mode
 	GPIOC->OSPEEDR &= ~((1 << 14) | (1 << 12));
 	
-	// Next we will configure the PUPDR registers to no pull up / down resistors
+	// Configure the PUPDR registers to no pull up / down resistors
 	GPIOC->PUPDR &= ~((1 << 15) | (1 << 14) | (1 << 13) | (1 << 12));
 	
-	// Next we set up the LED pins using the ODR register
+	// Set up the LED pins using the ODR register
 	GPIOC->ODR |= (1 << 7);
 	GPIOC->ODR &= ~(1 << 6);
 	
+	// Setup for USER push button located on pin PA0. Start with the MODER register
+	// which will be set to input mode 0x00. Low speed mode on OSPEEDR register,
+	// and pull down resistor on PUPDR register.
+	GPIOA->MODER &= ~((1 << 1) | (1 << 0));
+	GPIOA->OSPEEDR &= ~(1 << 0);
+	GPIOA->PUPDR |= (1 << 1);
+	GPIOA->PUPDR &= ~(1 << 0);
+	
+	uint32_t debouncer = 0;
 	while (1) {
-		HAL_Delay(500); // Delay 200ms
 		
-		//XOR the bits in ODR register to flip them making them toggle on and off.
-		GPIOC->ODR ^= ((1 << 7) | (1 << 6));
+		debouncer = (debouncer << 1);
 		
-		// Toggle the output state of both PC8 and PC9
-		//HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+		if ((GPIOA->IDR & 0X1) == 1) {
+			debouncer |= 0x01;
+		}
+		
+		if (debouncer == 0xFFFF){
+			GPIOC->ODR ^= ((1 << 7) | (1 << 6));
+		}
 	}
 }	
 
