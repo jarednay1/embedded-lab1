@@ -1,0 +1,35 @@
+int main(void) {
+	HAL_Init(); // Reset of all peripherals, init the Flash and Systick
+	SystemClock_Config(); //Configure the system clock
+	
+	// Enable APB1ENR clock to enable GPIOC clock
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	
+	// Next we need to configure PC8 and PC9 the LED pins. First we start with MODER registers which
+	// need to be set to general purpose output.
+	GPIOC->MODER &= ~((1 << 19) | (1 << 17));
+	GPIOC->MODER |= ((1 << 18) | (1 << 16));
+	
+	// Next we will configure OTYPER registers to be in push-pull mode.
+	GPIOC->OTYPER &= ~((1 << 9) | (1 << 8));
+	
+	// Next we will configure the OSPEEDR registers to low speed mode
+	GPIOC->OSPEEDR &= ~((1 << 18) | (1 << 16));
+	
+	// Next we will configure the PUPDR registers to no pull up / down resistors
+	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16));
+	
+	// Next we set up the LED pins using the ODR register
+	GPIOC->ODR |= (1 << 9);
+	GPIOC->ODR &= ~(1 << 8);
+	
+	while (1) {
+		HAL_Delay(500); // Delay 200ms
+		
+		//XOR the bits in ODR register to flip them making them toggle on and off.
+		GPIOC->ODR ^= ((1 << 9) | (1 << 8));
+		
+		// Toggle the output state of both PC8 and PC9
+		//HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+	}
+}	
