@@ -105,6 +105,10 @@ int main(void) {
 	// Set the SYSCFG_ERCI[0] regsiter to have PA[0] as an input.
 	SYSCFG->EXTICR[0] &= ((1 << 2) | (1 << 1) | (1 << 0));
 	
+	// Enable NVIC EXTI line 0 
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	NVIC_SetPriority(EXTI0_1_IRQn, 1);
+	
 	
 	//static volatile uint32_t counter = 0;
 	while (1) {
