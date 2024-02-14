@@ -64,8 +64,11 @@ int main(void) {
 	HAL_Init(); // Reset of all peripherals, init the Flash and Systick
 	SystemClock_Config(); //Configure the system clock
 	
-	// Enable APB1ENR clock to enable GPIOC
+	// Enable AHBENR clock to enable GPIOC
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN; // Line 7848 of stm32f072xb.h has periph clocks
+	
+	// Enable ABP2ENR clock to enable SYSCFG
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
 	
 	// Configure all LEDs: PC6, PC7, PC8, PC9, MODER register first
 	GPIOC->MODER &= ~((1 << 19) | (1 << 17) | (1 << 15) | (1 << 13));
@@ -87,14 +90,23 @@ int main(void) {
 	// Setup for USER push button located on pin PA0. Start with the MODER register
 	// which will be set to input mode 0x00. Low speed mode on OSPEEDR register,
 	// and pull down resistor on PUPDR register.
-	/*
+	
 	GPIOA->MODER &= ~((1 << 1) | (1 << 0));
 	GPIOA->OSPEEDR &= ~(1 << 0);
 	GPIOA->PUPDR |= (1 << 1);
 	GPIOA->PUPDR &= ~(1 << 0);
-	*/
 	
-	static volatile uint32_t counter = 0;
+	// Setup for the EXTI, interupt control, register EXTI_IMR
+	EXTI->IMR |= (1 << 0);
+	
+	// Setup for the EXTI_RTSR register, which will set input to trigger on rising edge
+	EXTI->RTSR |= (1 << 0);
+	
+	// Set the SYSCFG_ERCI[0] regsiter to have PA[0] as an input.
+	SYSCFG->EXTICR[0] &= ((1 << 2) | (1 << 1) | (1 << 0));
+	
+	
+	//static volatile uint32_t counter = 0;
 	while (1) {
 		HAL_Delay(500);
 		GPIOC->ODR ^= (1 << 6);
