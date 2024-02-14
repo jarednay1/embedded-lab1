@@ -155,6 +155,17 @@ void EXTI0_1_IRQHandler(void) {
 	GPIOC->ODR ^= ((1 << 8) | (1 << 9));
 	
 	// Clear the interupt in the EXTI 
+	//EXTI->PR |= (1 << 0);
+	
+	volatile int i = 0;
+	while (i < 1500000) {
+		i = i + 1;
+	}
+	// Toggle again
+	GPIOC->ODR ^= ((1 << 8) | (1 << 9));
+	
+	
+	// Clear the interupt in the EXTI 
 	EXTI->PR |= (1 << 0);
 
 }
