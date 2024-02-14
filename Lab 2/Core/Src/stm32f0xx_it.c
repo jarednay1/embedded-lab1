@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 volatile uint32_t counter;
+uint32_t debouncer = 0;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -150,6 +151,11 @@ void SysTick_Handler(void)
 
 /* USER CODE BEGIN 1 */
 void EXTI0_1_IRQHandler(void) {
+	// Toggle orange and green LEDs
+	GPIOC->ODR ^= ((1 << 8) | (1 << 9));
+	
+	// Clear the interupt in the EXTI 
+	EXTI->PR |= (1 << 0);
 
 }
 /* USER CODE END 1 */
