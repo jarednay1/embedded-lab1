@@ -107,8 +107,8 @@ int main(void) {
 	
 	// Enable NVIC EXTI line 0 
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
-	NVIC_SetPriority(SysTick_IRQn, 1);
-	NVIC_SetPriority(EXTI0_1_IRQn, 3);
+	NVIC_SetPriority(SysTick_IRQn, 2);
+	NVIC_SetPriority(EXTI0_1_IRQn, 1);
 	
 	
 	//static volatile uint32_t counter = 0;
