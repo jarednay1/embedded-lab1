@@ -103,8 +103,9 @@ int main(void)
 	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16));
 	
 	// Set up the LED pins to on / off in the ODR register
-	GPIOC->ODR |= (1 << 9);
-	GPIOC->ODR &= ~(1 << 8);
+	GPIOC->ODR &= ~(1 << 9);
+	GPIOC->ODR |= (1 << 8);
+
 	
 	// -----START TIMER SETUP-----
 	// Enable RCC clock for timer2 and timer3
