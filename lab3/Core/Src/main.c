@@ -72,7 +72,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-	RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN);
+	
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -84,7 +84,48 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-
+	
+	// -----START LED SETUP-----
+	// Enable AHBENR clock to enable GPIOC
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	
+	// Enable MODER register in orange and green LEDs GP output mode
+	GPIOC->MODER &= ~((1 << 19) | (1 << 17));
+	GPIOC->MODER |= ((1 << 18) | (1 << 16));
+	
+	// Enable OTYPER registers to be in push-pull mode
+	GPIOC->OTYPER &= ~((1 << 9) | (1 << 8));
+	
+	// Enable OSPEEDR registers to low speed mode
+	GPIOC->OSPEEDR &= ~((1 << 18) | (1 << 16));
+	
+	// Enable PUPDR registers to no pull up or pull down resistors
+	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16));
+	
+	// Set up the LED pins to on / off in the ODR register
+	GPIOC->ODR |= (1 << 9);
+	GPIOC->ODR &= ~(1 << 8);
+	
+	// -----START TIMER SETUP-----
+	// Enable RCC clock for timer2 and timer3
+	RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN);
+	
+	// Enable PSC register to 7999 or 0x1F3F
+	TIM2->PSC = 0x1F3F;
+	
+	// Enable ARR register to 4000 or 0xFA0
+	TIM2->ARR = 0xFA0;
+	
+	// Enable DIER register to UIE(Update interrupt enable)
+	TIM2->DIER |= 1;
+	
+	// Enable the CNT or configuration register of the timer
+	TIM2->CR1 &= ~((1 << 9) | (1 << 8) | (1 << 6) | (1 << 5) | (1 << 4) | (1 << 3) | (1	<< 1));
+	TIM2->CR1 |= ((1 << 7) | (1 << 2) | (1 << 0));
+	
+	// Enable timer2 in the NVIC
+	NVIC_EnableIRQ(TIM2_IRQn);
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
