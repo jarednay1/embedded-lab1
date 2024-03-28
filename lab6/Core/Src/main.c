@@ -83,7 +83,6 @@ void ADC_Setup (void) {
 	// Set ADC channel selection register to ADC_IN10 ie PC0
 	ADC1->CHSELR |= (1 << 10);
 	
-	
 	// Calibrate the ADC
 	ADC1->CR |= (1 << 31);
 	
@@ -166,7 +165,6 @@ int main(void)
 			GPIOC->ODR &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6));
 		}
 	}
-		
 }
 
 /**
