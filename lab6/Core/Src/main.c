@@ -51,8 +51,7 @@ void SystemClock_Config(void);
 
 /* USER CODE END PFP */
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+// Helper method to set up 4 LEDs in GPO mode.
 void LED_Setup (void) {
 	// Configure all LEDs: PC6, PC7, PC8, PC9, MODER register first
 	GPIOC->MODER &= ~((1 << 19) | (1 << 17) | (1 << 15) | (1 << 13));
@@ -66,9 +65,44 @@ void LED_Setup (void) {
 	
 	// Configure the PUPDR registers to no pull up / down resistors
 	GPIOC->PUPDR &= ~((1 << 19) | (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15) | (1 << 14) | (1 << 13) | (1 << 12));
-	
 }
-/* USER CODE END 0 */
+
+// A helper method to set up the ADC to pin PC0
+void ADC_Setup (void) {
+  // Set up the MODER register to Analog mode
+  GPIOC->MODER |= ((1 << 1) | (1 << 0));
+
+  // Set PUPDR register to no pull-up no pull-down
+  GPIOC->PUPDR &= ~((1 << 1) | (1 << 0));
+
+  // Set ADC configure register to 8-bit resolution, continuous conversion mode, and hardware
+	// triggers diabled.
+	ADC1->CFGR1 |= ((1 << 13) | (1 << 4));
+	ADC1->CFGR1 &= ~((1 << 11) | (1 << 10) | (1 << 3));
+	
+	// Set ADC channel selection register to ADC_IN10 ie PC0
+	ADC1->CHSELR |= (1 << 10);
+	
+	
+	// Calibrate the ADC
+	ADC1->CR |= (1 << 31);
+	
+	// Wait for calibration to finish
+	while (ADC1->CR & ADC_CR_ADCAL)
+	{		
+	}
+	
+	// Enable the ADC
+	ADC1->CR |= (1 << 0);
+	
+	// Wait for the ADC ready flag
+	while (!(ADC1->ISR & ADC_ISR_ADRDY))
+	{
+	}		
+	
+	// Start the ADC
+	ADC1->CR |= (1 << 2);
+} 
 
 /**
   * @brief  The application entry point.
@@ -82,33 +116,57 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 	
-	// Enable AHBENR clock for GPIOC peripheral
+	// Enable AHBENR clock for GPIOC peripheral and the APB2ENR clock for ADC1
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
-	
-	// Enable APB2ENR clock for ADC peripheral
 	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+
+  LED_Setup();
+	ADC_Setup();
 	
-	
-	
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	char ADC_val;
+  
+	// Main loop
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+		// A delay each loop so it does not run too quickly
+		HAL_Delay(1);
+		
+		ADC_val = ADC1->DR;
+		
+		// Turn on green
+		if (ADC_val > 10)
+		{
+			GPIOC->ODR |= (1 << 9);
+			GPIOC->ODR &= ~((1 << 8) | (1 << 7) | (1 << 6));
+		}
+		
+		// Turn on green and orange.
+		if (ADC_val > 100) 
+		{
+			GPIOC->ODR |= ((1 << 9) | (1 << 8));
+			GPIOC->ODR &= ~((1 << 7) | (1 << 6));
+		}
+		
+		// Turn on green, orange, and blue
+		if (ADC_val > 150) 
+		{
+			GPIOC->ODR |= ((1 << 9) | (1 << 8) | (1 << 7));
+			GPIOC->ODR &= ~(1 << 6);
+		}
+		
+		// Turn on all LEDs
+		if (ADC_val > 200) 
+		{
+			GPIOC->ODR |= ((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6));
+		}
+		
+		// Turn off all LEDs
+		if (ADC_val < 10) 
+		{
+			GPIOC->ODR &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6));
+		}
+	}
+		
 }
 
 /**
