@@ -82,7 +82,7 @@ void ADC_Setup (void) {
 	
 	// Set ADC channel selection register to ADC_IN10 ie PC0
 	ADC1->CHSELR |= (1 << 10);
-	
+		
 	// Calibrate the ADC
 	ADC1->CR |= (1 << 31);
 	
@@ -103,6 +103,21 @@ void ADC_Setup (void) {
 	ADC1->CR |= (1 << 2);
 } 
 
+void DAC_Setup (void)
+{
+	// Set up the MODER register to analog mode
+	GPIOA->MODER |= ((1 << 9) | (1 << 8));
+	
+	// Set PUPDR register to no pull-up no pull-down
+	GPIOA->PUPDR &= ~((1 << 9) | (1 << 8));
+	
+	// Set the DAC to software trigger mode
+	DAC1->CR |= ((1 << 5) | (1 << 4) | (1 << 3));
+	
+	// Enable the DAC
+	DAC1->CR |= (1 << 0);
+}
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -115,14 +130,21 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 	
-	// Enable AHBENR clock for GPIOC peripheral and the APB2ENR clock for ADC1
+	// Enable AHBENR clock for GPIOA and GPIOC peripherals and the APB2ENR clock for ADC1
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
 	RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
 
   LED_Setup();
 	ADC_Setup();
+	DAC_Setup();
 	
 	char ADC_val;
+	
+	// Sawtooth Wave: 8-bit, 32 samples/cycle
+	const uint8_t sawtooth_table[32] = {0,7,15,23,31,39,47,55,63,71,79,87,95,103,
+		111,119,127,134,142,150,158,166,174,182,190,198,206,214,222,230,238,246};
+	int i = 0;
   
 	// Main loop
   while (1)
@@ -130,6 +152,8 @@ int main(void)
 		// A delay each loop so it does not run too quickly
 		HAL_Delay(1);
 		
+		
+		// First Part is logic for 6.1 Checkoff
 		ADC_val = ADC1->DR;
 		
 		// Turn on green
@@ -164,7 +188,19 @@ int main(void)
 		{
 			GPIOC->ODR &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6));
 		}
-	}
+		
+		
+		// Logic for 6.2 Checkoff
+		// Set the value in the table and increment.
+		/*
+		DAC->DHR8R1 = sawtooth_table[i];
+		i = i + 1;
+		
+		// Once we get to 32 it is time to reset.
+		if (i == 32)
+			i = 0;
+		*/
+	}		
 }
 
 /**
