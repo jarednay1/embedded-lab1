@@ -1,0 +1,26 @@
+--cpu Cortex-M0
+"lab7\startup_stm32f072xb.o"
+"lab7\main.o"
+"lab7\stm32f0xx_it.o"
+"lab7\stm32f0xx_hal_msp.o"
+"lab7\motor.o"
+"lab7\stm32f0xx_hal_tim.o"
+"lab7\stm32f0xx_hal_tim_ex.o"
+"lab7\stm32f0xx_hal_rcc.o"
+"lab7\stm32f0xx_hal_rcc_ex.o"
+"lab7\stm32f0xx_hal.o"
+"lab7\stm32f0xx_hal_i2c.o"
+"lab7\stm32f0xx_hal_i2c_ex.o"
+"lab7\stm32f0xx_hal_gpio.o"
+"lab7\stm32f0xx_hal_dma.o"
+"lab7\stm32f0xx_hal_cortex.o"
+"lab7\stm32f0xx_hal_pwr.o"
+"lab7\stm32f0xx_hal_pwr_ex.o"
+"lab7\stm32f0xx_hal_flash.o"
+"lab7\stm32f0xx_hal_flash_ex.o"
+"lab7\stm32f0xx_hal_exti.o"
+"lab7\system_stm32f0xx.o"
+--strict --scatter "lab7\lab7.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "lab7.map" -o lab7\lab7.axf

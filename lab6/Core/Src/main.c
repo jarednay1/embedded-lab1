@@ -154,7 +154,10 @@ int main(void)
 		
 		
 		// First Part is logic for 6.1 Checkoff
+<<<<<<< HEAD
 		/*
+=======
+>>>>>>> 6.1checkoff
 		ADC_val = ADC1->DR;
 		
 		// Turn on green
@@ -189,17 +192,28 @@ int main(void)
 		{
 			GPIOC->ODR &= ~((1 << 9) | (1 << 8) | (1 << 7) | (1 << 6));
 		}
+<<<<<<< HEAD
 		*/
+=======
+>>>>>>> 6.1checkoff
 		
 		
 		// Logic for 6.2 Checkoff
 		// Set the value in the table and increment.
+<<<<<<< HEAD
+=======
+		/*
+>>>>>>> 6.1checkoff
 		DAC->DHR8R1 = sawtooth_table[i];
 		i = i + 1;
 		
 		// Once we get to 32 it is time to reset.
 		if (i == 32)
 			i = 0;
+<<<<<<< HEAD
+=======
+		*/
+>>>>>>> 6.1checkoff
 	}		
 }
 
