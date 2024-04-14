@@ -19,76 +19,17 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
+void LED_Setup(void);
+void Timer_Setup(void);
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-	
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-	
+void LED_Setup(void) {
 	// -----START LED SETUP-----
 	// Enable AHBENR clock to enable GPIOC
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
 	
+	// First Orange and Green LEDs
 	// Enable MODER register in orange and green LEDs GP output mode
 	GPIOC->MODER &= ~((1 << 19) | (1 << 17));
 	GPIOC->MODER |= ((1 << 18) | (1 << 16));
@@ -105,11 +46,50 @@ int main(void)
 	// Set up the LED pins to on / off in the ODR register
 	GPIOC->ODR &= ~(1 << 9);
 	GPIOC->ODR |= (1 << 8);
-
 	
+	// Next setup for the Blue and Red LEDs
+	// Set both to Alternate Function Mode
+	GPIOC->MODER |= ((1 << 15) | (1 << 13));
+	GPIOC->MODER &= ~((1 << 14) | (1 << 12));
+	
+	// Set AFR registers
+	GPIOC->AFR[0] &= ~((1 << 31) | (1 << 30) | (1 << 29) | (1 << 28) | (1 << 27) | (1 << 26) | (1 << 25) | (1 << 24));
+	
+}
+
+void Timer_Setup(void) {
 	// -----START TIMER SETUP-----
+	// Code for 3.2
 	// Enable RCC clock for timer2 and timer3
 	RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN);
+	
+	// Enable PSC register to 39 or 0x27
+	//TIM3->PSC = 0x27;
+	TIM3->PSC = 99;
+	
+	// Enable ARR register to 125 or 0x7D
+	//TIM3->ARR = 0x7D;
+	TIM3->ARR = 100;
+	
+	// Set CCMR1 register to have both CC1S and CC2S set to output mode
+	TIM3->CCMR1 &= ~(/*(1 << 12) |*/ (1 << 9) | (1 << 8) | (1 << 1) | (1 << 0));
+	TIM3->CCMR1 |= ((1 << 14) | (1 << 13) | (1 << 12) | (1 << 11) | (1 << 6) | (1 << 5) | (1 << 4) | (1 << 3));
+	
+	// Set output enable bits for channels 1 and 2 in CCER register
+	TIM3->CCER |= ((1 << 4) | (1<< 0));
+	
+	// Set CCR1 and CCR2 to 20% of AAR which is 25 or 0x19
+	TIM3->CCR1 = 85;
+	TIM3->CCR2 = 1;
+	//TIM3->CCR1 = 10;
+	//TIM3->CCR2 = 10;
+	
+	// Disable control register for TIM3
+	TIM3->CR1 |= (1 << 0);
+	
+	// Code for 3.1
+	// Enable RCC clock for timer2 and timer3
+	//RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN);
 	
 	// Enable PSC register to 7999 or 0x1F3F
 	TIM2->PSC = 0x1F3F;
@@ -126,18 +106,29 @@ int main(void)
 	
 	// Enable timer2 in the NVIC
 	NVIC_EnableIRQ(TIM2_IRQn);
-	
-  /* USER CODE END 2 */
+}
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+  SystemClock_Config();
+	
+	// Set up LEDs and Timers
+	LED_Setup();
+	Timer_Setup();
+
+	// Main while loop
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+	
   }
-  /* USER CODE END 3 */
 }
 
 /**
