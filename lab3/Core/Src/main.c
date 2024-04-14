@@ -80,7 +80,7 @@ void Timer_Setup(void) {
 	
 	// Set CCR1 and CCR2 to 20% of AAR which is 25 or 0x19
 	TIM3->CCR1 = 85;
-	TIM3->CCR2 = 1;
+	TIM3->CCR2 = 85;
 	//TIM3->CCR1 = 10;
 	//TIM3->CCR2 = 10;
 	
