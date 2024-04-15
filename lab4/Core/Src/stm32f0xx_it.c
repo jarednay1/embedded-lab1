@@ -46,7 +46,6 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-//void USART3_4_IRQHandler(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -133,11 +132,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 1 */
 }
 
-/*
-void USART3_4_IRQHandler(void) { 
-	
-}
-*/
+
 
 
 /******************************************************************************/

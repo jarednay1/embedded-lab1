@@ -3,7 +3,7 @@
 <title>Static Call Graph - [lab4\lab4.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image lab4\lab4.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Sun Apr 14 17:41:07 2024
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6210000: Last Updated: Sun Apr 14 19:28:42 2024
 <BR><P>
 <H3>Maximum Stack Usage =        120 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -62,7 +62,7 @@ Function Pointers
  <LI><a href="#[e]">TSC_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
  <LI><a href="#[21]">USART1_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
  <LI><a href="#[22]">USART2_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
- <LI><a href="#[23]">USART3_4_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
+ <LI><a href="#[23]">USART3_4_IRQHandler</a> from main.o(.text.USART3_4_IRQHandler) referenced from startup_stm32f072xb.o(RESET)
  <LI><a href="#[25]">USB_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
  <LI><a href="#[6]">WWDG_IRQHandler</a> from startup_stm32f072xb.o(.text) referenced from startup_stm32f072xb.o(RESET)
  <LI><a href="#[27]">__main</a> from __main.o(!!!main) referenced from startup_stm32f072xb.o(.text)
@@ -303,9 +303,6 @@ Global Symbols
 <P><STRONG><a name="[22]"></a>USART2_IRQHandler</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, startup_stm32f072xb.o(.text))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f072xb.o(RESET)
 </UL>
-<P><STRONG><a name="[23]"></a>USART3_4_IRQHandler</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, startup_stm32f072xb.o(.text))
-<BR>[Address Reference Count : 1]<UL><LI> startup_stm32f072xb.o(RESET)
-</UL>
 <P><STRONG><a name="[25]"></a>USB_IRQHandler</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, startup_stm32f072xb.o(.text))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f072xb.o(RESET)
 </UL>
@@ -487,7 +484,12 @@ Global Symbols
 <P><STRONG><a name="[26]"></a>SystemInit</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, system_stm32f0xx.o(.text.SystemInit))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f072xb.o(.text)
 </UL>
-<P><STRONG><a name="[31]"></a>main</STRONG> (Thumb, 660 bytes, Stack size 72 bytes, main.o(.text.main))
+<P><STRONG><a name="[23]"></a>USART3_4_IRQHandler</STRONG> (Thumb, 564 bytes, Stack size 20 bytes, main.o(.text.USART3_4_IRQHandler))
+<BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = USART3_4_IRQHandler
+</UL>
+<BR>[Address Reference Count : 1]<UL><LI> startup_stm32f072xb.o(RESET)
+</UL>
+<P><STRONG><a name="[31]"></a>main</STRONG> (Thumb, 388 bytes, Stack size 72 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 120<LI>Call Chain = main &rArr; HAL_RCC_OscConfig
 </UL>
 <BR>[Calls]<UL><LI><a href="#[3f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay

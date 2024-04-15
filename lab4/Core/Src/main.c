@@ -27,6 +27,13 @@ void USART_init(void);
 void Transmit_Char(char input);
 void Transmit_String(char* input);
 void Recieve_Char(char input);
+void USART3_4_IRQHandler(void);
+
+int is_first_char = 1;
+int start_msg_tx = 1;
+char letter;
+char number;
+char* error_msg = "Incorrect Key ";
 
 // Helper for LED initialization
 void LED_init(void) {
@@ -74,10 +81,10 @@ void USART_init(void) {
 	USART3->CR1 |= (1 << 0);
 	
 	// Enable interupts
-	USART3->CR1 |= (1 << 7);
+	USART3->CR1 |= (1 << 5);
 	
 	// Enable USART interupt in the NVIC
-	//NVIC_EnableIRQ(USART3_4_IRQn);
+	NVIC_EnableIRQ(USART3_4_IRQn);
 }
 
 // Function for transmitting one character
@@ -106,7 +113,6 @@ void Transmit_String(char* input) {
 // Method to recieve input for toggling LEDs
 void Recieve_Char(char input) {
 	//char input = USART3->RDR;
-	char* error_msg = "Incorrect Key";
 	
 	if (input == 'g') {
 		GPIOC->ODR ^= (1 << 9);
@@ -125,6 +131,90 @@ void Recieve_Char(char input) {
 	}
 }
 
+// Handler for USART3
+void USART3_4_IRQHandler(void) { 
+	// Fill in letter if first command
+	if (is_first_char) {
+		// Set letter and get ready for number command.
+		letter = USART3->RDR;
+		is_first_char = 0;
+		return;
+	}
+	// Otherwise fill in the number
+	else if (!is_first_char) {
+		number = USART3->RDR;
+	}
+	
+	// Each has command 0 = turn off, 1 = turn on, 2 = toggle.
+	if (letter == 'g') {
+		if (number == '0') {
+			GPIOC->ODR &= ~(1 << 9);
+		}
+		else if (number == '1') {
+			GPIOC->ODR |= (1 << 9);
+		}
+		else if (number == '2') {
+			GPIOC->ODR ^= (1 << 9);
+		}
+		else {
+			Transmit_String(error_msg);
+		}	
+	} 
+	else if (letter == 'o') {
+		if (number == '0') {
+			GPIOC->ODR &= ~(1 << 8);
+		}
+		else if (number == '1') {
+			GPIOC->ODR |= (1 << 8);
+		}
+		else if (number == '2') {
+			GPIOC->ODR ^= (1 << 8);
+		}
+		else {
+			Transmit_String(error_msg);
+		}	
+	}
+	else if (letter == 'b') {
+		if (number == '0') {
+			GPIOC->ODR &= ~(1 << 7);
+		}
+		else if (number == '1') {
+			GPIOC->ODR |= (1 << 7);
+		}
+		else if (number == '2') {
+			GPIOC->ODR ^= (1 << 7);
+		}
+		else {
+			Transmit_String(error_msg);
+		}	
+	}
+	else if (letter == 'r') {
+		if (number == '0') {
+			GPIOC->ODR &= ~(1 << 6);
+		}
+		else if (number == '1') {
+			GPIOC->ODR |= (1 << 6);
+		}
+		else if (number == '2') {
+			GPIOC->ODR ^= (1 << 6);
+		}
+		else {
+			Transmit_String(error_msg);
+		}	
+	} else {
+		Transmit_String(error_msg);
+	}
+	
+	// Tranmist the given command.
+	Transmit_Char(letter);
+	Transmit_Char(number);
+	Transmit_Char(' ');
+	
+	// Back to first charater and cmd prompt.
+	is_first_char = 1;
+	start_msg_tx = 1;
+}
+
 
 /**
   * @brief  The application entry point.
@@ -141,14 +231,22 @@ int main(void) {
   /* Infinite loop */
   while (1) {
 		char* test_input = "hello world";
-		HAL_Delay(1000);
+		char* start_msg = "CMD: ";
 		//Transmit_Char('a');
 		//Transmit_String(test_input);
 		
+		/*
 		if (USART3->ISR & (1 << 5)) {
 			char input = USART3->RDR;
 			Recieve_Char(input);
+		} */
+		
+		// If true display "CMD"
+		if (start_msg_tx) {
+			Transmit_String(start_msg);
+			start_msg_tx = 0;
 		}
+		HAL_Delay(100);
   }
 }
 
