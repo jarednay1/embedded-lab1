@@ -25,7 +25,7 @@ void USART_init(void);
 void I2C2_init(void);
 void Transmit_Char(char input);
 void Transmit_String(char* input);
-void Get_Who_Am_I(char slave_address, char bytes);
+char Get_Who_Am_I(char slave_address, char bytes);
 
 // CONSTS
 const char Gyro_Address = 0x69;
@@ -83,7 +83,7 @@ void GPIO_init(void) {
 	GPIOC->ODR |= (1 << 0);
 }
 
-// Helper for USART initilization
+// Helper for USART initilization PC4 = TX and PC5 = RX
 void USART_init(void) {
 	// First enable clock for GPIOC
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
@@ -168,21 +168,85 @@ void Transmit_String(char* input) {
 
 
 // Helper method to get whoami from the slave device
-void Get_Who_Am_I(char slave_address, char bytes) {
-	// First clear the register if there is a value in it, only bits [7:1] are of worry
+char Get_Who_Am_I(char slave_address, char bytes) {
+	// First clear the register if there is a value in it, only bits [7:1] are of worry.
 	I2C2->CR2 &= ~(0xFF << 1);
 	
-	// Set the slave address shifted one to the left
+	// Set the slave address shifted one to the left.
 	I2C2->CR2 |= (slave_address << 1);
 	
-	// Clear the bytes register
+	// Clear the bytes register.
 	I2C2->CR2 &= ~((0xFF << 16));
 	
-	// Set number of bytes to transfer
+	// Set number of bytes to transfer.
 	I2C2->CR2 |= (bytes << 16);
 	
+	// Set to write operation.
+	I2C2->CR2 &= ~(1 << 10);
 	
+	// Set the start bit.
+	I2C2->CR2 |= (1 << 13);
 	
+	// While waiting for TXIS or NACKF to be set.
+	while (!(I2C2->ISR & (1 << 1) | I2C2->ISR & (1 << 4))) {
+		
+	}
+	
+	// If the NACK flag is there print error message.
+	if (I2C2->ISR & (1 << 4)) {
+		Transmit_String("error");
+		return 0x00;
+	}
+	
+	// Set the address of whoami on target chip.
+	I2C2->TXDR = 0x0F;
+	
+	// Wait for transfer complete flag to be set
+	while (!(I2C2->ISR & (1 << 6))) {
+		
+	}
+	
+	// clear the register if there is a value in it, only bits [7:1] are of worry.
+	I2C2->CR2 &= ~(0xFF << 1);
+	
+	// Set the slave address shifted one to the left.
+	I2C2->CR2 |= (slave_address << 1);
+	
+	// Clear the bytes register.
+	I2C2->CR2 &= ~((0xFF << 16));
+	
+	// Set number of bytes to transfer.
+	I2C2->CR2 |= (bytes << 16);
+	
+	// Set to read operation.
+	I2C2->CR2 |= (1 << 10);
+	
+	// Set the start bit.
+	I2C2->CR2 |= (1 << 13);
+	
+	// While waiting for RXNE or NACKF to be set.
+	while (!(I2C2->ISR & (1 << 2) | I2C2->ISR & (1 << 4))) {
+		
+	}
+	
+	// If the NACK flag is there print error message.
+	if (I2C2->ISR & (1 << 4)) {
+		Transmit_String("error");
+		return 0x00;
+	}
+	
+	// Wait for transfer complete flag to be set
+	while (!(I2C2->ISR & (1 << 6))) {
+		
+	}
+	
+	// Get the value from transmission.
+	char return_val = I2C2->RXDR;
+	
+	// Set the stop bit
+	I2C2->CR2 |= (1 << 14);
+	
+	return return_val;
 }
 
 /**
@@ -200,13 +264,21 @@ int main(void) {
 
 	
   while (1) {
-		char* test_input = "hello world";
+		//char* test_input = "hello world";
+		//Transmit_String(test_input);
 		
-		Transmit_String(test_input);
+		char whoami = Get_Who_Am_I(Gyro_Address, 1);
+		
+		if (whoami == 0) {
+			Transmit_String("Bad return value");
+			return 1;
+		}
+		whoami = whoami - 0x92;
+		
+		Transmit_Char(whoami);
 		
 		HAL_Delay(5000);
   }
-	
 }
 
 /**
