@@ -18,84 +18,195 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
+void GPIO_init(void);
+void USART_init(void);
+void I2C2_init(void);
+void Transmit_Char(char input);
+void Transmit_String(char* input);
+void Get_Who_Am_I(char slave_address, char bytes);
 
-/* USER CODE END PFP */
+// CONSTS
+const char Gyro_Address = 0x69;
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+// Helper to handle all GPIO setup
+void GPIO_init(void) {
+	// Set up clock for GIPIOB and GPIOC
+	RCC->AHBENR |= (RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN);
+	
+	// ----START I2C GPIO SETUP---- 
+	// Pin PB11
+	// Set to Alternate Function Mode
+	GPIOB->MODER &= ~(1 << 22);
+	GPIOB->MODER |= (1 << 23);
+	
+	// Set to open drain
+	GPIOB->OTYPER |= (1 << 11);
+	
+	// Set alternate funtion to I2C2_SDA - AF1
+	GPIOB->AFR[1] &= ~((1 << 15) | (1 << 14) | (1 << 13));
+	GPIOB->AFR[1] |= (1 << 12);
+	
+	// Pin PB13
+	// Set to Alternate Function Mode
+	GPIOB->MODER &= ~(1 << 26);
+	GPIOB->MODER |= (1 << 27);
+	
+	// Set to open drain
+	GPIOB->OTYPER |= (1 << 13);
+	
+	// Set alternate function to ISC2_SCL - AF5
+	GPIOB->AFR[1] &= ~((1 << 23) | (1 << 21));
+	GPIOB->AFR[1] |= ((1 << 22) | (1 << 20));
+	
+	// Pin PB14
+	// Set to output mode
+	GPIOB->MODER &= ~(1 << 29);
+	GPIOB->MODER |= (1 << 28);
+	
+	// Set to push-pull resistors
+	GPIOB->OTYPER &= ~(1 << 14);
+	
+	// Set output state to high
+	GPIOB->ODR |= (1 << 14);
+	
+	// Pin PC0
+	// Set to output mode
+	GPIOC->MODER &= ~(1 << 1);
+	GPIOC->MODER |= (1 << 0);
+	
+	// Set to push-pull resistors
+	GPIOC->OTYPER &= ~(1 << 0);
+	
+	// Set output state to high
+	GPIOC->ODR |= (1 << 0);
+}
 
-/* USER CODE END 0 */
+// Helper for USART initilization
+void USART_init(void) {
+	// First enable clock for GPIOC
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	
+	// Set both PC4 and PC5 to Alternate Function Mode 
+	GPIOC->MODER |= ((1 << 11) | (1 << 9));
+	GPIOC->MODER &= ~((1 << 10) | (1 << 8));
+	
+	// Select the AF1 alternate function for PC4 and PC5
+	GPIOC->AFR[0] |= ((1 << 20) | (1 << 16));
+	
+	// Enable clock for USART3
+	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+	
+	// Set the baud rate to 115200 bits / second. Clock is 8Mhz.
+	USART3->BRR = 8000000 / 115200;
+	
+	// Enable Transmitter and Reciever hardware
+	USART3->CR1 |= ((1 << 3) | (1 << 2));
+	
+	// Enable the USART
+	USART3->CR1 |= (1 << 0);
+	
+	// Enable interupts
+	USART3->CR1 |= (1 << 5);
+	
+	// Enable USART interupt in the NVIC
+	NVIC_EnableIRQ(USART3_4_IRQn);
+}
+
+// Helper to handle I2C setup
+void I2C2_init(void) {
+	// Enable the clock for I2C2
+	RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
+	
+	// Set timing register configurations for 100kHz (Standard mode)
+	// Set prescaler value to 1
+	I2C2->TIMINGR |= (1 << 28);
+	
+	// Set the SCL low period to 0x13
+	I2C2->TIMINGR &= ~((1 << 7) | (1 << 6) | (1 << 5) | (1 << 3) | (1 << 2));
+	I2C2->TIMINGR |= ((1 << 4) | (1 << 1) | (1 << 0));
+	
+	// Set the SCL high period to 0xF
+	I2C2->TIMINGR &= ~((1 << 15) | (1 << 14) | (1 << 13) | (1 << 12));
+	I2C2->TIMINGR |= ((1 << 11) | (1 << 10) | (1 << 9) | (1 << 8));
+	
+	// Set the data hold time to 0x2
+	I2C2->TIMINGR &= ~((1 << 19) | (1 << 18) | (1 << 16));
+	I2C2->TIMINGR |= (1 << 17);
+	
+	// Set up data setup time to 0x4
+	I2C2->TIMINGR &= ~((1 << 23) | (1 << 21) | (1 << 20));
+	I2C2->TIMINGR |= (1 << 22);
+	
+	// Enable in the control register
+	I2C2->CR1 |= (1 << 0);
+}
+
+// Helper function for transmitting one character through USART
+void Transmit_Char(char input) {
+	// An empty while loop that breaks through when the status register
+	// says the transmit data register is empty.
+	while(!(USART3->ISR & (1 << 7))) {
+			
+	}
+	
+	// Write the input to the transfer data register
+	USART3->TDR = input;
+}
+
+// Helper function to transmit a string through USART
+void Transmit_String(char* input) {
+	int counter = 0;
+	
+	// Loop through and transmit the string.
+	while(*(input + counter) != 0) {
+		Transmit_Char(*(input + counter));
+		counter = counter + 1;
+	}
+}
+
+
+// Helper method to get whoami from the slave device
+void Get_Who_Am_I(char slave_address, char bytes) {
+	// First clear the register if there is a value in it, only bits [7:1] are of worry
+	I2C2->CR2 &= ~(0xFF << 1);
+	
+	// Set the slave address shifted one to the left
+	I2C2->CR2 |= (slave_address << 1);
+	
+	// Clear the bytes register
+	I2C2->CR2 &= ~((0xFF << 16));
+	
+	// Set number of bytes to transfer
+	I2C2->CR2 |= (bytes << 16);
+	
+	
+	
+}
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+int main(void) {
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
+	
+	GPIO_init();
+	I2C2_init();
+	USART_init();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+	
+  while (1) {
+		char* test_input = "hello world";
+		
+		Transmit_String(test_input);
+		
+		HAL_Delay(5000);
   }
-  /* USER CODE END 3 */
+	
 }
 
 /**
