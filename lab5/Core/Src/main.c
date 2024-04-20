@@ -25,7 +25,7 @@ void USART_init(void);
 void I2C2_init(void);
 void Transmit_Char(char input);
 void Transmit_String(char* input);
-char Get_Who_Am_I(char slave_address, char bytes);
+char Read_to_Slave(char slave_address, char bytes);
 
 // CONSTS
 const char Gyro_Address = 0x69;
@@ -167,8 +167,9 @@ void Transmit_String(char* input) {
 }
 
 
-// Helper method to get whoami from the slave device
-char Get_Who_Am_I(char slave_address, char bytes) {
+// Helper method to get whoami from the slave device (May only work with 1 byte?? Not sure about
+// getting into malloc and free)
+char Read_From_Slave(char slave_address, char bytes) {
 	// First clear the register if there is a value in it, only bits [7:1] are of worry.
 	I2C2->CR2 &= ~(0xFF << 1);
 	
@@ -261,23 +262,22 @@ int main(void) {
 	GPIO_init();
 	I2C2_init();
 	USART_init();
-
 	
   while (1) {
 		//char* test_input = "hello world";
 		//Transmit_String(test_input);
 		
-		char whoami = Get_Who_Am_I(Gyro_Address, 1);
+		char whoami = Read_From_Slave(Gyro_Address, 1);
 		
 		if (whoami == 0) {
 			Transmit_String("Bad return value");
 			return 1;
 		}
-		whoami = whoami - 0x92;
+		whoami = whoami - 0x91;
 		
 		Transmit_Char(whoami);
 		
-		HAL_Delay(5000);
+		HAL_Delay(1000);
   }
 }
 
