@@ -24,13 +24,21 @@ void LED_init(void);
 void GPIO_init(void);
 void USART_init(void);
 void I2C2_init(void);
+void Gyro_init(void);
 void Transmit_Char(char input);
 void Transmit_String(char* input);
-char* Read_to_Slave(char slave_address, char register_address);
-void Write_to_Slave(char slave_address, char register_address, char data);
+char Read_Slave(char slave_address, char register_address, char is_last_byte);
+void Write_Slave(char slave_address, char data, char is_last_byte);
+int16_t Read_X(void);
+int16_t Read_Y(void);
 
 // CONSTS
 const char Gyro_Address = 0x69;
+const char XL_Address = 0x28;
+const char XH_Address = 0x29;
+const char YL_Address = 0x2A;
+const char YH_Address = 0x2B;
+const int16_t threshold = 0x01FF;
 
 // Helper for LED initialization
 void LED_init(void) {
@@ -166,6 +174,10 @@ void I2C2_init(void) {
 	I2C2->CR1 |= (1 << 0);
 }
 
+void Gyro_init(void) {
+
+}
+
 // Helper function for transmitting one character through USART
 void Transmit_Char(char input) {
 	// An empty while loop that breaks through when the status register
@@ -190,79 +202,40 @@ void Transmit_String(char* input) {
 }
 
 // Helper method to read from slave device registers.
-char Read_From_Slave(char slave_address, char register_address) {
+char Read_Slave(char slave_address, char register_address, char is_last_byte) {
 	// Some locals to keep the return value
 	char data;
 	
 	// Clear the register if there is a value in it, only bits [7:1] are of worry.
-	I2C2->CR2 &= ~(0xFF << 1);
+	//I2C2->CR2 &= ~(0xFF << 1);
 	
 	// Set the slave address shifted one to the left.
 	I2C2->CR2 |= (slave_address << 1);
 	
 	// Clear the bytes register.
-	I2C2->CR2 &= ~((0xFF << 16));
+	//I2C2->CR2 &= ~((0xFF << 16));
 	
 	// Set number of bytes to transfer, this is selecting the regsister
-	// and should always be 1 unless register address is more than one byte.
 	I2C2->CR2 |= (0x1 << 16);
-	
-	// Set to write operation.
-	I2C2->CR2 &= ~(1 << 10);
-	
-	// Set the start bit.
-	I2C2->CR2 |= (1 << 13);
-	
-	// While waiting for TXIS or NACKF to be set.
-	while (!(I2C2->ISR & (1 << 1) | I2C2->ISR & (1 << 4))) {
-		
-	}
-	
-	// If the NACK flag is there print error message.
-	if (I2C2->ISR & (1 << 4)) {
-		Transmit_String("error");
-		return 0x00;
-	}
-	
-	// Set the address of whoami on target chip.
-	I2C2->TXDR = register_address;
-	
-	// Wait for transfer complete flag to be set
-	while (!(I2C2->ISR & (1 << 6))) {
-		
-	}
-	
-	// Prep for the read
-	// clear the register if there is a value in it, only bits [7:1] are of worry.
-	I2C2->CR2 &= ~(0xFF << 1);
-	
-	// Set the slave address shifted one to the left.
-	I2C2->CR2 |= (slave_address << 1);
-	
-	// Clear the bytes register.
-	I2C2->CR2 &= ~((0xFF << 16));
-	
-	// Set number of bytes to transfer.
-	I2C2->CR2 |= (1 << 16);
 	
 	// Set to read operation.
 	I2C2->CR2 |= (1 << 10);
 	
 	// Set the start bit.
 	I2C2->CR2 |= (1 << 13);
-
 	
+
 	// While waiting for RXNE or NACKF to be set.
 	while (!(I2C2->ISR & (1 << 2) | I2C2->ISR & (1 << 4))) {
 			
 	}
-		
+	
 	// If the NACK flag is there print error message.
 	if (I2C2->ISR & (1 << 4)) {
-		Transmit_String("error");
+		Transmit_String("error read");
 		return 0x00;
 	}
-		
+	
 	// Get the value from transmission.
 	data = I2C2->RXDR;
 	
@@ -272,24 +245,25 @@ char Read_From_Slave(char slave_address, char register_address) {
 	}
 	
 	// Set the stop bit and return a ptr to the data.
-	I2C2->CR2 |= (1 << 14);
+	if (is_last_byte) {
+		I2C2->CR2 |= (1 << 14);
+	}
 	return data;
 }
 
 
 // Helper function to write to a slave device at given register
-void Write_to_Slave(char slave_address, char register_address, char data) {
+void Write_Slave(char slave_address, char data, char is_last_byte) {
 	// Clear the register if there is a value in it, only bits [7:1] are of worry.
-	I2C2->CR2 &= ~(0xFF << 1);
+	//I2C2->CR2 &= ~(0xFF << 1);
 	
 	// Set the slave address shifted one to the left.
 	I2C2->CR2 |= (slave_address << 1);
 	
 	// Clear the bytes register.
-	I2C2->CR2 &= ~((0xFF << 16));
+	//I2C2->CR2 &= ~((0xFF << 16));
 	
-	// Set number of bytes to transfer, this is selecting the regsister
-	// and should always be 1 unless register address is more than one byte.
+	// Set number of bytes to transfer
 	I2C2->CR2 |= (0x1 << 16);
 	
 	// Set to write operation.
@@ -303,60 +277,49 @@ void Write_to_Slave(char slave_address, char register_address, char data) {
 		
 	}
 	
+	//Transmit_String("Made it past TXIS");
 	// If the NACK flag is there print error message.
 	if (I2C2->ISR & (1 << 4)) {
-		Transmit_String("error");
+		Transmit_String("error write");
 		return;
 	}
 	
-	// Set the address of whoami on target chip.
-	I2C2->TXDR = register_address;
+	// Set the address of the register on target chip.
+	I2C2->TXDR = data;
 	
 	// Wait for transfer complete flag to be set
 	while (!(I2C2->ISR & (1 << 6))) {
 		
 	}
 	
-	// Prep for the write
-	// clear the register if there is a value in it, only bits [7:1] are of worry.
-	I2C2->CR2 &= ~(0xFF << 1);
-	
-	// Set the slave address shifted one to the left.
-	I2C2->CR2 |= (slave_address << 1);
-	
-	// Clear the bytes register.
-	I2C2->CR2 &= ~((0xFF << 16));
-	
-	// Set number of bytes to transfer.
-	I2C2->CR2 |= (1 << 16);
-	
-	// Set to write operation.
-	I2C2->CR2 &= ~(1 << 10);
-	
-	// Set the start bit.
-	I2C2->CR2 |= (1 << 13);
-	
-	// While waiting for TXIS or NACKF to be set.
-	while (!(I2C2->ISR & (1 << 1) | I2C2->ISR & (1 << 4))) {
-		
+	// Set the stop bit
+	if (is_last_byte) {
+		I2C2->CR2 |= (1 << 14);
 	}
-	
-	// If the NACK flag is there print error message.
-	if (I2C2->ISR & (1 << 4)) {
-		Transmit_String("error");
-		return;
-	}
-	
-	// Get the value from transmission.
-	I2C2->TXDR = data;
+}
 
-	// Wait for transfer complete flag to be set.
-	while (!(I2C2->ISR & (1 << 6))) {
-		
-	}
+// Heleper method to get the value from gyro of X
+int16_t Read_X(void) {
+	int16_t return_val;
+	char temp;
 	
-	// Set the stop bit 
-	I2C2->CR2 |= (1 << 14);
+	//GPIOC->ODR |= (1 << 9);
+	Write_Slave(Gyro_Address, XH_Address, 0);
+	//GPIOC->ODR |= (1 << 7);
+	temp = Read_Slave(Gyro_Address, XH_Address, 0);
+	return_val = (temp << 8);
+	
+
+	
+	Write_Slave(Gyro_Address, XL_Address, 0);
+	temp = Read_Slave(Gyro_Address, XL_Address, 0);
+	return_val |= (return_val | temp);
+	
+	return return_val;
+}
+
+int16_t Read_Y(void) {
+	return 0;
 }
 
 /**
@@ -379,26 +342,62 @@ int main(void) {
 	char y_bytes[2];
 	short* x;
 	short* y;
+	// Gyro setup
+	Write_Slave(Gyro_Address, 0x20, 0);
+	Write_Slave(Gyro_Address, 0x0B, 0);
+	
+	//I2C2->CR2 |= (1 << 14);
   while (1) {
+		
+		Transmit_Char('F');
 		// For part 1
 		/*
-		char whoami = Read_From_Slave(Gyro_Address, 0x0F);
+		Write_Slave(Gyro_Address, 0x0F, 0);
+		char whoami = Read_Slave(Gyro_Address, 0x0F, 1);
 		if (whoami == 0) {
 			Transmit_String("Bad return value");
-			return 1;
+			break;
 		}
 		whoami = whoami - 0x92;
 		Transmit_Char(whoami);
 		*/
+		
 
-		Write_to_Slave(Gyro_Address, 0x20, 0x0B);
-		HAL_Delay(1000);
+		
+		Write_Slave(Gyro_Address, 0x20, 0);
+		char ctrl_reg = Read_Slave(Gyro_Address, 0x20, 1);
+		
+		ctrl_reg = ctrl_reg + 0x41;
+		
+		Transmit_Char(ctrl_reg);
+		
+		
+		
+		int16_t x_val = Read_X();
+		
+		if (x_val > threshold) {
+			GPIOC->ODR |= (1 << 6);
+		}
+		else {
+			GPIOC->ODR &= ~(1 << 6);
+		}
+		
+		if (x_val < 0 - threshold) {
+			GPIOC->ODR |= (1 << 8);
+		}			
+		else {
+			GPIOC->ODR &= ~(1 << 8);
+		}
+		
+		HAL_Delay(100);
 
+		
+		/*
 		// Read out the data and store into shorts
-		x_bytes[0] = Read_From_Slave(Gyro_Address, 0x29);
-		x_bytes[1] = Read_From_Slave(Gyro_Address, 0x28);
-		y_bytes[0] = Read_From_Slave(Gyro_Address, 0x2B);
-		y_bytes[1] = Read_From_Slave(Gyro_Address, 0x2A);
+		x_bytes[0] = Read_Slave(Gyro_Address, 0x29);
+		x_bytes[1] = Read_Slave(Gyro_Address, 0x28);
+		y_bytes[0] = Read_Slave(Gyro_Address, 0x2B);
+		y_bytes[1] = Read_Slave(Gyro_Address, 0x2A);
 		x_bytes[0] = x_bytes[0] + 0x42;
 		Transmit_Char(x_bytes[0]);
 		
@@ -413,6 +412,7 @@ int main(void) {
 			GPIOC->ODR |= (1 << 9);
 			GPIOC->ODR &= ~(1 << 6);
 		}
+		*/
   }
 }
 
